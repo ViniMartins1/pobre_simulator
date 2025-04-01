@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
 import 'package:pobre_simulator/dao/category_dao.dart';
 import 'package:pobre_simulator/model/category.dart';
@@ -19,23 +20,37 @@ class TransactionsList extends StatefulWidget {
 
 class _TransactionsListState extends State<TransactionsList> {
   final List<Category> _cacheCategories = [];
-  late Future<void> _categoriesFuture;
+  bool _isLoaded = false;
 
-  Future<void> _reload() async {
+  Future<void> _loadCategories() async {
     final categories = await CategoryDAO().getAll();
-    _cacheCategories.clear();
-    _cacheCategories.addAll(categories);
-    setState(() {});
+    if (mounted) {
+      setState(() {
+        _cacheCategories.clear();
+        _cacheCategories.addAll(categories);
+        _isLoaded = true;
+      });
+    }
   }
 
   @override
   void initState() {
     super.initState();
-    _categoriesFuture = _reload().then((value) => setState(() {}));
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _loadCategories().then((_) {
+        setState(() {
+          _isLoaded = true;
+        });
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!_isLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final Map<String, List<Transaction>> groupedTransactions = {};
 
     for (var transaction in widget.transactions) {
@@ -48,36 +63,35 @@ class _TransactionsListState extends State<TransactionsList> {
 
     final sortedDates = groupedTransactions.keys.toList()..sort((a, b) => b.compareTo(a));
 
-    return FutureBuilder(
-        future: _categoriesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return const Center(child: Text('Error loading categories'));
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: sortedDates.length,
-            itemBuilder: (context, index) {
-              final dateKey = sortedDates[index];
-              final dateTransactions = groupedTransactions[dateKey]!;
-              final date = DateTime.parse(dateKey);
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDateHeader(date),
-                  ...dateTransactions.map((transaction) {
-                    final category = _cacheCategories.firstWhere((c) => c.id == transaction.category);
-                    return TransactionCard(transaction: transaction, category: category);
-                  }),
-                  SizedBox(height: 16),
-                ],
-              );
-            },
-          );
+    return RefreshIndicator(
+      onRefresh: () async {
+        setState(() {
+          _isLoaded = false;
         });
+        await _loadCategories();
+      },
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: sortedDates.length,
+        itemBuilder: (context, index) {
+          final dateKey = sortedDates[index];
+          final dateTransactions = groupedTransactions[dateKey]!;
+          final date = DateTime.parse(dateKey);
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDateHeader(date),
+              ...dateTransactions.map((transaction) {
+                final category = _cacheCategories.firstWhere((c) => c.id == transaction.category);
+                return TransactionCard(transaction: transaction, category: category);
+              }),
+              SizedBox(height: 16),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildDateHeader(DateTime date) {

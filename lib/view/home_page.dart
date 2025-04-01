@@ -25,63 +25,60 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Consumer<HomeController>(builder: (context, value, child) {
-      return RefreshIndicator(
-        onRefresh: () async => await value.refresh(),
-        child: Scaffold(
-          body: SafeArea(
-            child: Column(
-              children: [
-                HomeHeader(),
-                Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Transactions',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+      return Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              HomeHeader(),
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Transactions',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.calendar_today, size: 20),
+                          onPressed: () {
+                            // Date filter action
+                          },
                         ),
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.calendar_today, size: 20),
-                            onPressed: () {
-                              // Date filter action
-                            },
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.filter_list),
-                            onPressed: () {
-                              // Category filter action
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        IconButton(
+                          icon: Icon(Icons.filter_list),
+                          onPressed: () {
+                            // Category filter action
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
+              ),
 
-                // Transactions list
-                Expanded(
-                  child: TransactionsList(transactions: value.transactions),
-                ),
-              ],
-            ),
-          ),
-          bottomNavigationBar: BottomNavigationBar(
-            items: [
-              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-              BottomNavigationBarItem(icon: Icon(Icons.analytics), label: 'Stats'),
-              BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Profile'),
+              // Transactions list
+              Expanded(
+                child: TransactionsList(transactions: value.transactions),
+              ),
             ],
-            currentIndex: 0,
-            onTap: (index) {
-              // Handle navigation
-            },
           ),
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          items: [
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+            BottomNavigationBarItem(icon: Icon(Icons.analytics), label: 'Stats'),
+            BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Profile'),
+          ],
+          currentIndex: 0,
+          onTap: (index) {
+            // Handle navigation
+          },
         ),
       );
     });
